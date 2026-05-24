@@ -770,10 +770,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 911343560}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63af6a3c71d34d843ad5219bc11d8959, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e76d3e5eade7154683379bc21ca9a97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefab: {fileID: 3820473644749258127, guid: 7245384782bfae341892170708e90f48, type: 3}
+  prefab: {fileID: 251741913882586391, guid: 4bfe7ab7a7a14624c890b2513ce35bdf, type: 3}
   minTime: 2
   maxTime: 4
 --- !u!4 &911343562
