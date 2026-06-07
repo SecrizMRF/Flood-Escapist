@@ -140,7 +140,8 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      chara_climb2_0: -7459669133602078498
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
