@@ -1,6 +1,5 @@
 using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
-
 [RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class Player : MonoBehaviour
@@ -8,8 +7,12 @@ public class Player : MonoBehaviour
     private SpriteRenderer spriterenderer;
     public Sprite[] runSprite;
     public Sprite climbSprite;
-    private int spriteIndex;
+    public Sprite[] jumpSprite;
 
+    public Sprite jumpUpSprite;
+    public Sprite jumpDownSprite;
+
+    private int spriteIndex;
 
     private new Rigidbody2D rigidbody;
     private new Collider2D collider;
@@ -50,7 +53,6 @@ public class Player : MonoBehaviour
         size.y += 0.1f;
         size.x /= 2f;
 
-        // OverlapBoxNonAlloc is deprecated; use OverlapBoxAll and copy into the preallocated array
         Collider2D[] hits = Physics2D.OverlapBoxAll(transform.position, size, 0f);
         int amount = Mathf.Min(hits.Length, results.Length);
         for (int i = 0; i < amount; i++) results[i] = hits[i];
@@ -108,6 +110,13 @@ public class Player : MonoBehaviour
         {
             spriterenderer.sprite = climbSprite;
         }
+        else if (!grounded && !climbing)
+        {
+            if (direction.y > 0f)
+                spriterenderer.sprite = jumpUpSprite;
+            else
+                spriterenderer.sprite = jumpDownSprite;
+        }
         else if (direction.x != 0f)
         {
             spriteIndex++;
@@ -117,7 +126,6 @@ public class Player : MonoBehaviour
             }
             spriterenderer.sprite = runSprite[spriteIndex];
         }
-        
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -125,7 +133,6 @@ public class Player : MonoBehaviour
         if (collision.gameObject.CompareTag("Objective"))
         {
             enabled = false;
-            // Use the non-deprecated API to find the GameManager instance
             FindFirstObjectByType<GameManager>().LevelComplete();
         }
         else if (collision.gameObject.CompareTag("Obstacle"))
