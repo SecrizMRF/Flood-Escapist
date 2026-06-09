@@ -2,9 +2,9 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class FallingObstacle : MonoBehaviour
+public class FallingObstacle : Obstacle
 {
-    [SerializeField] private float fallSpeed = 5f;
+    public float fallSpeed = 5f;
     private Rigidbody2D rb;
 
     private void Awake()
@@ -22,6 +22,11 @@ public class FallingObstacle : MonoBehaviour
     private void Update()
     {
         if (transform.position.y < -20f)
-            Destroy(gameObject);
+            gameObject.SetActive(false);
+    }
+
+    public override void OnHitPlayer(Player player)
+    {
+        GameManager.Instance.LevelFailed();
     }
 }
