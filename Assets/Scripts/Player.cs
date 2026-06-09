@@ -11,7 +11,6 @@ public class Player : MonoBehaviour
 
     public Sprite jumpUpSprite;
     public Sprite jumpDownSprite;
-
     private int spriteIndex;
 
     private new Rigidbody2D rigidbody;
@@ -125,6 +124,10 @@ public class Player : MonoBehaviour
                 spriteIndex = 0;
             }
             spriterenderer.sprite = runSprite[spriteIndex];
+        } 
+        else
+        {
+            spriterenderer.sprite = runSprite[0];
         }
     }
 
