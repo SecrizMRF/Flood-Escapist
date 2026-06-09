@@ -3,14 +3,26 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    private int level;
+    [SerializeField] private string[] levelNames = { "level1", "level2", "level3" };
     private int lives;
     private int score;
+    private string currentLevelName;
+    private LivesUI livesUI;
 
     private void Start()
     {
         DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
         NewGame();
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        livesUI = FindFirstObjectByType<LivesUI>();
+        if (livesUI != null)
+        {
+            livesUI.UpdateHearts(lives);
+        }
     }
 
     private void NewGame()
@@ -18,12 +30,12 @@ public class GameManager : MonoBehaviour
         lives = 3;
         score = 0;
 
-        LoadLevel(1);
+        LoadLevel(levelNames[0]);
     }
 
-    private void LoadLevel(int index)
+    private void LoadLevel(string sceneName)
     {
-        level = index;
+        currentLevelName = sceneName;
 
         Camera camera = Camera.main;
 
@@ -36,34 +48,31 @@ public class GameManager : MonoBehaviour
 
     private void LoadScene()
     {
-        SceneManager.LoadScene(level);
+        SceneManager.LoadScene(currentLevelName);
     }
 
     public void LevelComplete()
     {
         score += 1000;
 
-        int nextLevel = level + 1;
-
-        if (nextLevel < SceneManager.sceneCountInBuildSettings)
-        {
-            LoadLevel(nextLevel);
-        } else
-        {
-            LoadLevel(1);
-        }
+        int currentIndex = System.Array.IndexOf(levelNames, currentLevelName);
+        int nextIndex = (currentIndex + 1) % levelNames.Length;
+        LoadLevel(levelNames[nextIndex]);
     }
 
     public void LevelFailed()
     {
         lives--;
 
-        if(lives <= 0)
+        if (livesUI != null) livesUI.UpdateHearts(lives);
+
+        if (lives <= 0)
         {
             NewGame();
-        } else
+        }
+        else
         {
-            LoadLevel(level);
+            LoadLevel(currentLevelName);
         }
     }
 }

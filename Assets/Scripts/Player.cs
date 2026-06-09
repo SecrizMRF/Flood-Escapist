@@ -1,18 +1,19 @@
+using NUnit.Framework;
 using UnityEngine;
+
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class Player : MonoBehaviour
 {
-    private SpriteRenderer spriterenderer;
+    [Header("Sprites")]
     public Sprite[] runSprite;
     public Sprite climbSprite;
-    public Sprite[] jumpSprite;
-
     public Sprite jumpUpSprite;
     public Sprite jumpDownSprite;
     private int spriteIndex;
 
+    private SpriteRenderer spriterenderer;
     private new Rigidbody2D rigidbody;
     private new Collider2D collider;
 
@@ -24,7 +25,8 @@ public class Player : MonoBehaviour
 
     private bool grounded;
     private bool climbing;
-    
+    private bool isHit = false;
+
     private void Awake()
     {
         spriterenderer = GetComponent<SpriteRenderer>();
@@ -59,7 +61,7 @@ public class Player : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             GameObject hit = results[i].gameObject;
-            if(hit.layer == LayerMask.NameToLayer("Ground"))
+            if (hit.layer == LayerMask.NameToLayer("Ground"))
             {
                 grounded = hit.transform.position.y < (transform.position.y - 0.5f);
                 Physics2D.IgnoreCollision(collider, results[i], !grounded);
@@ -74,11 +76,16 @@ public class Player : MonoBehaviour
     private void Update()
     {
         CheckCollision();
-        if(climbing) {
+        if (climbing)
+        {
             direction.y = Input.GetAxis("Vertical") * moveSpeed;
-        } else if(grounded && Input.GetButtonDown("Jump")) {
+        }
+        else if (grounded && Input.GetButtonDown("Jump"))
+        {
             direction = Vector2.up * jumpStrength;
-        } else {
+        }
+        else
+        {
             direction += Physics2D.gravity * Time.deltaTime;
         }
 
@@ -92,7 +99,8 @@ public class Player : MonoBehaviour
         if (direction.x > 0f)
         {
             transform.eulerAngles = Vector3.zero;
-        } else if (direction.x < 0f)
+        }
+        else if (direction.x < 0f)
         {
             transform.eulerAngles = new Vector3(0f, 180f, 0f);
         }
@@ -120,11 +128,9 @@ public class Player : MonoBehaviour
         {
             spriteIndex++;
             if (spriteIndex >= runSprite.Length)
-            {
                 spriteIndex = 0;
-            }
             spriterenderer.sprite = runSprite[spriteIndex];
-        } 
+        }
         else
         {
             spriterenderer.sprite = runSprite[0];
@@ -133,15 +139,18 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        if (isHit) return;
         if (collision.gameObject.CompareTag("Objective"))
         {
+            isHit = true;
             enabled = false;
-            FindFirstObjectByType<GameManager>().LevelComplete();
+            GameManager.Instance.LevelComplete();
         }
-        else if (collision.gameObject.CompareTag("Obstacle"))
+        else if (collision.gameObject.TryGetComponent<Obstacle>(out Obstacle obstacle))
         {
+            isHit = true;
+            obstacle.Hit(this);
             enabled = false;
-            FindFirstObjectByType<GameManager>().LevelFailed();
         }
     }
 }
