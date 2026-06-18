@@ -60,7 +60,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         highScore = PlayerPrefs.GetInt("HighScore", 0);
-        OnHighScoreChanged?.Invoke(highScore);
+        OnHighScoreChanged?.Invoke(highScore); // kirim ke UI saat awal
 
         string sceneName = SceneManager.GetActiveScene().name;
 
@@ -82,11 +82,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // ===== Method Pause & Resume =====
     public void PauseGame()
     {
         if (isPaused) return;
         isPaused = true;
-        Time.timeScale = 0f;
+        Time.timeScale = 0f;                       // bekukan semua gerakan
         OnPaused?.Invoke();
     }
 
@@ -94,7 +95,7 @@ public class GameManager : MonoBehaviour
     {
         if (!isPaused) return;
         isPaused = false;
-        Time.timeScale = 1f;
+        Time.timeScale = 1f;                       // kembalikan kecepatan normal
         OnResumed?.Invoke();
     }
 
@@ -104,7 +105,7 @@ public class GameManager : MonoBehaviour
         {
             highScore = score;
             PlayerPrefs.SetInt("HighScore", highScore);
-            PlayerPrefs.Save();
+            PlayerPrefs.Save(); // pastikan data tertulis
             OnHighScoreChanged?.Invoke(highScore);
             Debug.Log($"High Score baru: {highScore}");
         }
@@ -120,6 +121,8 @@ public class GameManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // Tidak perlu mencari LivesUI lagi karena UI akan subscribe sendiri
+        // Kirimkan update lives saat scene baru dimuat
         OnLivesChanged?.Invoke(lives);
         OnScoreChanged?.Invoke(score);
     }
@@ -129,6 +132,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         lives = 3;
         score = 0;
+        // Pastikan UI mendapat nilai awal
         OnLivesChanged?.Invoke(lives);
         OnScoreChanged?.Invoke(score);
 

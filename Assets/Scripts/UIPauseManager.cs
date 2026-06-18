@@ -82,7 +82,9 @@ public class UIPauseManager : MonoBehaviour
             }
         }
 
+        // Tampilkan tombol pause hanya di scene yang diizinkan
         pauseButton.gameObject.SetActive(allowed);
+        // Panel pause tetap tersembunyi saat pindah scene
     }
 
     private void OnPauseButtonClicked()
@@ -127,6 +129,8 @@ public class UIPauseManager : MonoBehaviour
     private void HidePausePanel()
     {
         pausePanel.SetActive(false);
+        // pauseButton hanya aktif jika scene diizinkan, jadi jangan asal true
+        // Biarkan UpdateVisibility yang mengatur, di sini kita hanya pastikan panel hilang
         UpdateVisibility(SceneManager.GetActiveScene().name);
     }
 }

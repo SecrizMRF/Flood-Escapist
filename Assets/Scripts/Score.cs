@@ -11,6 +11,7 @@ public class Score : MonoBehaviour
     {
         if (GameManager.Instance == null) return;
 
+        // Subs ke eventnya
         GameManager.Instance.OnScoreChanged.AddListener(UpdateScore);
         GameManager.Instance.OnHighScoreChanged.AddListener(UpdateHighScore);
 

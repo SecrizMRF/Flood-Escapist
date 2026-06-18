@@ -1,0 +1,646 @@
+// GameManager.cs
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+
+public class GameManager : MonoBehaviour
+{
+    // ===== Singleton =====
+    public static GameManager Instance { get; private set; }
+
+    // ===== Events (Observer) =====
+    public UnityEvent<int> OnLivesChanged = new UnityEvent<int>();
+    public UnityEvent<int> OnScoreChanged = new UnityEvent<int>();
+    public UnityEvent OnLevelComplete = new UnityEvent();
+    public UnityEvent OnGameOver = new UnityEvent();
+
+    // ===== Config =====
+    [SerializeField] private string[] levelNames = { "level1", "level2", "level3" };
+
+    // ===== State =====
+    private int lives;
+    private int score;
+    public int Lives => lives;
+    public int Score => score;
+    private string currentLevelName;
+
+    // == Update MAIN MENU UI
+    private enum GameState { MainMenu, Playing }
+    private GameState currentState = GameState.MainMenu;
+
+    private void Awake()
+    {
+        // Singleton setup
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    // === Update MAIN MENU
+    private void Start()
+    {
+        string sceneName = SceneManager.GetActiveScene().name;
+
+        if (sceneName == "Preload")
+        {
+            SceneManager.LoadScene("MainMenu");
+            return;
+        }
+
+        if (sceneName == "MainMenu")
+        {
+            currentState = GameState.MainMenu;
+            Debug.Log("Game state => MainMenu");
+        }
+        else
+        {
+            currentState = GameState.Playing;
+            NewGame();
+        }
+    }
+
+    // === Update MAIN MENU
+    public void StartNewGame()
+    {
+        currentState = GameState.Playing;
+        NewGame();
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Tidak perlu mencari LivesUI lagi karena UI akan subscribe sendiri
+        // Kirimkan update lives saat scene baru dimuat
+        OnLivesChanged?.Invoke(lives);
+        OnScoreChanged?.Invoke(score);
+    }
+
+    private void NewGame()
+    {
+        lives = 3;
+        score = 0;
+        // Pastikan UI mendapat nilai awal
+        OnLivesChanged?.Invoke(lives);
+        OnScoreChanged?.Invoke(score);
+
+        LoadLevel(levelNames[0]);
+    }
+
+    private void LoadLevel(string sceneName)
+    {
+        currentLevelName = sceneName;
+        Camera camera = Camera.main;
+        if (camera != null)
+            camera.cullingMask = 0;
+
+        Invoke(nameof(LoadScene), 1f);
+    }
+
+    private void LoadScene()
+    {
+        SceneManager.LoadScene(currentLevelName);
+    }
+
+    public void LevelComplete()
+    {
+        score += 1000;
+        OnScoreChanged?.Invoke(score);
+        OnLevelComplete?.Invoke();
+
+        int currentIndex = System.Array.IndexOf(levelNames, currentLevelName);
+        int nextIndex = (currentIndex + 1) % levelNames.Length;
+        LoadLevel(levelNames[nextIndex]);
+    }
+
+    public void LevelFailed()
+    {
+        lives--;
+        OnLivesChanged?.Invoke(lives);
+
+        if (lives <= 0)
+        {
+            OnGameOver?.Invoke();
+            NewGame();
+        }
+        else
+        {
+            LoadLevel(currentLevelName);
+        }
+    }
+}
+
+// Player.cs
+using NUnit.Framework;
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
+[RequireComponent(typeof(SpriteRenderer))]
+public class Player : MonoBehaviour
+{
+    [Header("Sprites")]
+    public Sprite[] runSprite;
+    public Sprite climbSprite;
+    public Sprite jumpUpSprite;
+    public Sprite jumpDownSprite;
+    private int spriteIndex;
+
+    private SpriteRenderer spriterenderer;
+    private new Rigidbody2D rigidbody;
+    private new Collider2D collider;
+
+    private Collider2D[] results;
+    private Vector2 direction;
+
+    public float moveSpeed = 1f;
+    public float jumpStrength = 1f;
+
+    private bool grounded;
+    private bool climbing;
+    private bool isHit = false;
+
+    private void Awake()
+    {
+        spriterenderer = GetComponent<SpriteRenderer>();
+        rigidbody = GetComponent<Rigidbody2D>();
+        collider = GetComponent<Collider2D>();
+        results = new Collider2D[4];
+    }
+
+    private void OnEnable()
+    {
+        InvokeRepeating(nameof(AnimateSprite), 1f/12f, 1f/12f);
+    }
+
+    private void OnDisable()
+    {
+        CancelInvoke();
+    }
+
+    private void CheckCollision()
+    {
+        grounded = false;
+        climbing = false;
+
+        Vector2 size = collider.bounds.size;
+        size.y += 0.1f;
+        size.x /= 2f;
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(transform.position, size, 0f);
+        int amount = Mathf.Min(hits.Length, results.Length);
+        for (int i = 0; i < amount; i++) results[i] = hits[i];
+
+        for (int i = 0; i < amount; i++)
+        {
+            GameObject hit = results[i].gameObject;
+            if (hit.layer == LayerMask.NameToLayer("Ground"))
+            {
+                grounded = hit.transform.position.y < (transform.position.y - 0.5f);
+                Physics2D.IgnoreCollision(collider, results[i], !grounded);
+            }
+            else if (hit.layer == LayerMask.NameToLayer("Ladder"))
+            {
+                climbing = true;
+            }
+        }
+    }
+
+    private void Update()
+    {
+        CheckCollision();
+        if (climbing)
+        {
+            direction.y = Input.GetAxis("Vertical") * moveSpeed;
+        }
+        else if (grounded && Input.GetButtonDown("Jump"))
+        {
+            direction = Vector2.up * jumpStrength;
+        }
+        else
+        {
+            direction += Physics2D.gravity * Time.deltaTime;
+        }
+
+        direction.x = Input.GetAxis("Horizontal") * moveSpeed;
+
+        if (grounded)
+        {
+            direction.y = Mathf.Max(direction.y, -1f);
+        }
+
+        if (direction.x > 0f)
+        {
+            transform.eulerAngles = Vector3.zero;
+        }
+        else if (direction.x < 0f)
+        {
+            transform.eulerAngles = new Vector3(0f, 180f, 0f);
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        rigidbody.MovePosition(rigidbody.position + direction * Time.fixedDeltaTime);
+    }
+
+    private void AnimateSprite()
+    {
+        if (climbing)
+        {
+            spriterenderer.sprite = climbSprite;
+        }
+        else if (!grounded && !climbing)
+        {
+            if (direction.y > 0f)
+                spriterenderer.sprite = jumpUpSprite;
+            else
+                spriterenderer.sprite = jumpDownSprite;
+        }
+        else if (direction.x != 0f)
+        {
+            spriteIndex++;
+            if (spriteIndex >= runSprite.Length)
+                spriteIndex = 0;
+            spriterenderer.sprite = runSprite[spriteIndex];
+        }
+        else
+        {
+            spriterenderer.sprite = runSprite[0]; // idle di tanah
+        }
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (isHit) return;
+        // Cek Objective (tag tetap dipakai jika belum ada class khusus)
+        if (collision.gameObject.CompareTag("Objective"))
+        {
+            isHit = true;
+            enabled = false;
+            GameManager.Instance.LevelComplete();
+        }
+        // Deteksi obstacle via abstract class
+        else if (collision.gameObject.TryGetComponent<Obstacle>(out Obstacle obstacle))
+        {
+            isHit = true;
+            obstacle.Hit(this);    // obstacle akan memanggil GameManager
+            enabled = false;
+        }
+    }
+}
+
+// Spawner.cs
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Spawner : MonoBehaviour
+{
+    [Header("Prefab & Timing")]
+    public GameObject prefab;
+    public float minTime = 2f;
+    public float maxTime = 4f;
+
+    [Header("Pooling")]
+    public int poolSize = 5;
+    private Queue<GameObject> pool = new Queue<GameObject>();
+
+    private void Start()
+    {
+        // Isi pool awal
+        for (int i = 0; i < poolSize; i++)
+        {
+            GameObject obj = Instantiate(prefab, Vector3.zero, Quaternion.identity);
+            obj.SetActive(false);
+            pool.Enqueue(obj);
+        }
+        Spawn();
+    }
+
+    private void Spawn()
+    {
+        GameObject newObj = GetPooledObject();
+        newObj.transform.position = transform.position;
+        newObj.transform.rotation = Quaternion.identity;
+
+        // Random sprite bisa ditambahkan di sini (lihat script Spawner sebelumnya)
+
+        newObj.SetActive(true);
+
+        // Jadwalkan spawn berikutnya
+        Invoke(nameof(Spawn), Random.Range(minTime, maxTime));
+    }
+
+    private GameObject GetPooledObject()
+    {
+        // Cari yang tidak aktif di pool
+        foreach (GameObject obj in pool)
+        {
+            if (!obj.activeInHierarchy)
+                return obj;
+        }
+
+        // Jika semua aktif, buat baru dan tambahkan ke pool
+        GameObject newObj = Instantiate(prefab, Vector3.zero, Quaternion.identity);
+        pool.Enqueue(newObj);
+        return newObj;
+    }
+}
+
+// Obstacle.cs
+using UnityEngine;
+
+[RequireComponent(typeof(Collider2D))]
+public abstract class Obstacle : MonoBehaviour
+{
+    private bool hasHit = false;
+
+    // Method aman yang hanya boleh dipanggil sekali
+    public void Hit(Player player)
+    {
+        if (hasHit) return;       // cegah panggilan kedua & seterusnya
+        hasHit = true;
+        OnHitPlayer(player);      // panggil implementasi spesifik
+    }
+
+    // Implementasi spesifik di class turunan
+    public abstract void OnHitPlayer(Player player);
+
+    // Deteksi Player – bisa dipicu beberapa kali jika banyak collider
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.TryGetComponent<Player>(out Player player))
+        {
+            Hit(player); // otomatis aman dari double‑hit
+        }
+    }
+}
+
+// Barrel.cs
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody2D))]
+public class Barrel : Obstacle     // <- Sekarang mewarisi Obstacle
+{
+    private new Rigidbody2D rigidbody;
+    public float speed = 1f;
+
+    private void Awake()
+    {
+        rigidbody = GetComponent<Rigidbody2D>();
+    }
+
+    // Collision dengan ground (tidak menimpa OnCollisionEnter2D di base class)
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // Panggil base jika perlu? Base class juga punya OnCollisionEnter2D.
+        // Unity akan memanggil keduanya? Sebenarnya hanya satu yang akan dipanggil,
+        // karena method ini bukan virtual. Agar aman, kita pindahkan logika ground
+        // ke sini, dan secara eksplisit panggil base jika menyentuh Player.
+        // Alternatif: gunakan method terpisah.
+        
+        // Cek apakah yang disentuh adalah Player
+        if (collision.gameObject.TryGetComponent<Player>(out Player player))
+        {
+            Hit(player); // panggil implementasi abstract
+            return;
+        }
+
+        // Jika ground, tambahkan gaya
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        {
+            rigidbody.AddForce(collision.transform.right * speed, ForceMode2D.Impulse);
+        }
+    }
+
+    public override void OnHitPlayer(Player player)
+    {
+        // Barrel hanya memberitahu GameManager
+        GameManager.Instance.LevelFailed();
+    }
+}
+
+// FallingObstacle.cs
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
+public class FallingObstacle : Obstacle
+{
+    public float fallSpeed = 5f;
+    private Rigidbody2D rb;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+        rb.bodyType = RigidbodyType2D.Kinematic;
+    }
+
+    private void FixedUpdate()
+    {
+        rb.velocity = Vector2.down * fallSpeed;
+    }
+
+    private void Update()
+    {
+        if (transform.position.y < -20f)
+            gameObject.SetActive(false);
+    }
+
+    // Override abstract method
+    public override void OnHitPlayer(Player player)
+    {
+        GameManager.Instance.LevelFailed();
+    }
+}
+
+// MainMenuUI.cs
+using UnityEngine.SceneManagement;
+using UnityEngine;
+
+public class MainMenuUI : MonoBehaviour
+{
+    [Header("Panels")]
+    [SerializeField] private GameObject settingsPanel;
+
+    public void OnPlayClicked()
+    {
+        // Panggil method di GameManager untuk mulai game
+        GameManager.Instance.StartNewGame();
+    }
+
+    public void OnSettingsClicked()
+    {
+        if (settingsPanel != null)
+            settingsPanel.SetActive(true);
+    }
+
+    public void OnQuitClicked()
+    {
+        #if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+        #else
+        Application.Quit();
+        #endif
+    }
+}
+
+// RisingWater.cs
+using UnityEngine;
+
+public class RisingWater : Obstacle
+{
+    public static RisingWater Instance { get; private set; }
+
+    [Header("Rising Settings")]
+    [SerializeField] private float riseSpeed = 0.5f;
+    [SerializeField] private float startY = -10f;
+    [SerializeField] private float maxY = 10f;
+
+    private enum WaterState { Idle, Rising, Stopped }
+    private WaterState currentState = WaterState.Idle;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            transform.position = new Vector3(0f, startY, 0f);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
+
+    private void Start()
+    {
+        // Air langsung naik begitu scene dimulai
+        if (currentState == WaterState.Idle)
+        {
+            StartRising();
+        }
+    }
+
+    private void Update()
+    {
+        if (currentState == WaterState.Rising)
+        {
+            Vector3 pos = transform.position;
+            pos.y += riseSpeed * Time.deltaTime;
+
+            if (pos.y >= maxY)
+            {
+                pos.y = maxY;
+                currentState = WaterState.Stopped;
+            }
+
+            transform.position = pos;
+        }
+    }
+
+    public void StartRising()
+    {
+        if (currentState == WaterState.Idle)
+        {
+            currentState = WaterState.Rising;
+            Debug.Log("Air mulai naik");
+        }
+    }
+
+    public override void OnHitPlayer(Player player)
+    {
+        GameManager.Instance.LevelFailed();
+    }
+}
+
+// SettingPanelUI.cs
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class SettingsPanelUI : MonoBehaviour
+{
+    [SerializeField] private Slider volumeSlider;
+    [SerializeField] private TMP_Dropdown resolutionDropdown;
+
+    private void Start()
+    {
+        // Inisialisasi slider
+        volumeSlider.value = AudioListener.volume;
+        volumeSlider.onValueChanged.AddListener(SetVolume);
+
+        // Setup dropdown
+        resolutionDropdown.ClearOptions();
+        resolutionDropdown.AddOptions(new System.Collections.Generic.List<string> {
+            "640x360",
+            "1280x720",
+            "1920x1080"
+        });
+        resolutionDropdown.onValueChanged.AddListener(SetResolution);
+    }
+
+    public void SetVolume(float value)
+    {
+        AudioListener.volume = value;
+    }
+
+    public void SetResolution(int index)
+    {
+        switch (index)
+        {
+            case 0: Screen.SetResolution(640, 360, false); break;
+            case 1: Screen.SetResolution(1280, 720, false); break;
+            case 2: Screen.SetResolution(1920, 1080, false); break;
+        }
+    }
+
+    public void Close()
+    {
+        gameObject.SetActive(false);
+    }
+}
+
+// LivesUI.cs
+using UnityEngine;
+using UnityEngine.UI;
+
+public class LivesUI : MonoBehaviour
+{
+    public Image[] heartImages;
+
+    private void Start()
+    {
+        // Subscribe ke event GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnLivesChanged.AddListener(UpdateHearts);
+            // Tampilkan lives saat ini
+            UpdateHearts(GameManager.Instance.Lives); // butuh getter? 
+        }
+    }
+
+    public void UpdateHearts(int lives)
+    {
+        for (int i = 0; i < heartImages.Length; i++)
+        {
+            heartImages[i].enabled = (i < lives);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribe untuk mencegah memory leak
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnLivesChanged.RemoveListener(UpdateHearts);
+    }
+}

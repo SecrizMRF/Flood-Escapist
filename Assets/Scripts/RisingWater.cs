@@ -28,6 +28,7 @@ public class RisingWater : Obstacle
 
     private void Start()
     {
+        // Air langsung naik begitu scene dimulai
         if (currentState == WaterState.Idle)
         {
             StartRising();

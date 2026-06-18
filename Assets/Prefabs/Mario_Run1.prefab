@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8568093528351079804}
   - component: {fileID: 8367870248086976191}
   - component: {fileID: 1601931604269527144}
-  - component: {fileID: 3243122647720197653}
+  - component: {fileID: 2344918487926963762}
   m_Layer: 0
   m_Name: Mario_Run1
   m_TagString: Player
@@ -28,8 +28,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7333629238203319845}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.2800293, y: -5.359985, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -113,7 +113,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 4
+  m_Constraints: 0
 --- !u!70 &1601931604269527144
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -151,7 +151,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 0.65, y: 1}
   m_Direction: 0
---- !u!114 &3243122647720197653
+--- !u!114 &2344918487926963762
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -160,7 +160,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7333629238203319845}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: be4b7e482d96ba945b4c05f8b898b505, type: 3}
+  m_Script: {fileID: 11500000, guid: 7a14b83b38a5488489e5d6359be0885f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   runSprite:
@@ -169,5 +169,5 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 1b2df8cc6347bf940aed7387287b98c5, type: 3}
   - {fileID: 21300000, guid: 6811d47992774a6478d8dec24f783036, type: 3}
   climbSprite: {fileID: 21300000, guid: 0c18135131e02c845a995356a66197c5, type: 3}
-  moveSpeed: 3
-  jumpStrength: 4
+  moveSpeed: 3.5
+  jumpStrength: 4.2

@@ -14,15 +14,18 @@ public class MainMenuUI : MonoBehaviour
 
     private void Start()
     {
+        // Listener
         continueButton.onClick.AddListener(OnContinueClicked);
         newGameButton.onClick.AddListener(OnPlayClicked);
         // settingsButton.onClick.AddListener(OnSettingsClicked);
         quitButton.onClick.AddListener(OnQuitClicked);
 
+        // Cek apakah ada data lanjutan
         if (GameManager.Instance != null)
         {
             bool hasProgress = GameManager.Instance.SavedProgress();
             continueButton.gameObject.SetActive(hasProgress);
+            // Subscribe event jika ada perubahan di masa depan (misal dari scene lain)
             GameManager.Instance.OnContinueAvailable.AddListener(SetContinueButton);
         }
     }
