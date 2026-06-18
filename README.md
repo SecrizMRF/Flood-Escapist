@@ -24,10 +24,10 @@ Player harus survive dari terjangan banjir setelah terjebak di dalam gedung.
 4. Jika ada pop up windows protector, pilih more info -> run anyway
 ---
 ### Jobdesc
-Muhammad Rizky Fadhillah as Lead Programmer, Game Engineer
-Yasmin Assyifa as Artist, Assistent Programmer
-Edric Roland Li as Level Builder, Assistent Programmer
-Najla Az Zahra Tanjung as QA Tester, Assistent Programmer
+- Muhammad Rizky Fadhillah as Lead Programmer, Game Engineer
+- Yasmin Assyifa as Artist, Assistent Programmer
+- Edric Roland Li as Level Builder, Assistent Programmer
+- Najla Az Zahra Tanjung as QA Tester, Assistent Programmer
 ---
 ### OOP Implementation
 1. Encapsulation -> kami menerapkan ini pada Method dan Variable sensitif untuk melindungi isinya
